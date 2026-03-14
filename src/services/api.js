@@ -3,7 +3,7 @@ import axios from 'axios';
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5201',
 });
-
+//Request interceptor to add token to headers
 // Har request me token add karo
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('hireiq_token');

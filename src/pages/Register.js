@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../services/api';
 import { Zap, User, Mail, Lock, ArrowRight } from 'lucide-react';
-
+//Test Text..
 function Register() {
   const [form, setForm] = useState({
     name: '', email: '', password: '', role: 'recruiter'

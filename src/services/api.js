@@ -55,5 +55,9 @@ export const reviewPdfResume = (formData) =>
   API.post('/api/pdf/review', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
   });
-
+  // Custom Resume Fields
+  export const getCustomFields = () => API.get('/api/resume-fields');
+  export const createCustomField = (data) => API.post('/api/resume-fields', data);
+  export const updateCustomField = (id, data) => API.put(`/api/resume-fields/${id}`, data);
+  export const deleteCustomField = (id) => API.delete(`/api/resume-fields/${id}`);
 export default API;

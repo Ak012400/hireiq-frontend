@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { FileEdit, Zap, Download, Eye, User, Briefcase, Code, GraduationCap, FolderOpen, Mail, Phone } from 'lucide-react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { FileEdit, Zap, Download, Eye, User, Briefcase, Code, GraduationCap, FolderOpen, Mail, Phone, Plus, Trash2 } from 'lucide-react';
+import { generatePdf, getCustomFields, createCustomField, deleteCustomField } from '../services/api';
 
 function ResumeBuilder() {
   const [form, setForm] = useState({
@@ -8,38 +8,66 @@ function ResumeBuilder() {
     skills: '', education: '', projects: '',
     email: '', phone: '',
   });
+  const [customFields, setCustomFields] = useState([]);
+  const [newField, setNewField] = useState({ fieldName: '', fieldValue: '', fieldType: 'text' });
+  const [addingField, setAddingField] = useState(false);
   const [loading, setLoading] = useState(false);
   const [htmlPreview, setHtmlPreview] = useState('');
   const [generated, setGenerated] = useState(false);
 
-  const handleGenerate = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  useEffect(() => {
+    loadCustomFields();
+  }, []);
+
+  const loadCustomFields = async () => {
     try {
-      const res = await axios.post('http://127.0.0.1:5000/ml/build-resume', {
-        ...form, format: 'html'
-      });
-      setHtmlPreview(res.data.html);
-      setGenerated(true);
-    } catch (err) {
-      // Flask offline — demo HTML generate karo
-      setHtmlPreview(generateDemoHtml(form));
-      setGenerated(true);
-    } finally {
-      setLoading(false);
+      const res = await getCustomFields();
+      setCustomFields(res.data);
+    } catch {
+      setCustomFields([]);
     }
   };
 
-  const generateDemoHtml = (data) => `
-<!DOCTYPE html>
+  const handleAddField = async () => {
+    if (!newField.fieldName.trim() || !newField.fieldValue.trim()) return;
+    try {
+      const res = await createCustomField({
+        fieldName: newField.fieldName,
+        fieldValue: newField.fieldValue,
+        fieldType: newField.fieldType,
+        order: customFields.length
+      });
+      setCustomFields(prev => [...prev, res.data]);
+      setNewField({ fieldName: '', fieldValue: '', fieldType: 'text' });
+      setAddingField(false);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDeleteField = async (id) => {
+    try {
+      await deleteCustomField(id);
+      setCustomFields(prev => prev.filter(f => f.id !== id));
+    } catch {
+      // ignore
+    }
+  };
+
+  const generateDemoHtml = (data, customFields) => {
+    const customSections = customFields.map(f => `
+      <div class="section-title">${f.fieldName}</div>
+      <p style="font-size:13px; color:#555;">${f.fieldValue}</p>
+    `).join('');
+
+    return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: 'Segoe UI', sans-serif; color: #333; }
-  .header { background: linear-gradient(135deg, #1a1a2e, #16213e);
-            color: white; padding: 30px 40px; }
+  .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 30px 40px; }
   .name { font-size: 32px; font-weight: 700; letter-spacing: 2px; }
   .role { font-size: 16px; color: #a8b2d8; margin-top: 6px; }
   .contact { margin-top: 10px; font-size: 13px; color: #8892b0; }
@@ -47,18 +75,12 @@ function ResumeBuilder() {
   .body { display: flex; }
   .sidebar { width: 32%; background: #f8f9fa; padding: 25px 20px; }
   .main { width: 68%; padding: 25px 30px; }
-  .section-title { font-size: 13px; font-weight: 700;
-                   text-transform: uppercase; letter-spacing: 2px;
-                   color: #1a1a2e; border-bottom: 2px solid #1a1a2e;
-                   padding-bottom: 5px; margin-bottom: 12px; margin-top: 20px; }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #1a1a2e; border-bottom: 2px solid #1a1a2e; padding-bottom: 5px; margin-bottom: 12px; margin-top: 20px; }
   .section-title:first-child { margin-top: 0; }
-  .skill-tag { display: inline-block; background: #EBF5FB;
-               color: #1a1a2e; padding: 4px 12px; border-radius: 15px;
-               margin: 3px 2px; font-size: 12px; }
+  .skill-tag { display: inline-block; background: #EBF5FB; color: #1a1a2e; padding: 4px 12px; border-radius: 15px; margin: 3px 2px; font-size: 12px; }
   ul { padding-left: 18px; }
   li { margin-bottom: 5px; font-size: 13px; line-height: 1.5; }
-  .footer { text-align: center; padding: 10px; font-size: 10px;
-            color: #bbb; border-top: 1px solid #eee; }
+  .footer { text-align: center; padding: 10px; font-size: 10px; color: #bbb; border-top: 1px solid #eee; }
 </style>
 </head>
 <body>
@@ -73,9 +95,7 @@ function ResumeBuilder() {
 <div class="body">
   <div class="sidebar">
     <div class="section-title">Skills</div>
-    ${data.skills.split(',').map(s =>
-      `<span class="skill-tag">${s.trim()}</span>`
-    ).join('')}
+    ${data.skills.split(',').map(s => `<span class="skill-tag">${s.trim()}</span>`).join('')}
     <div class="section-title">Education</div>
     <p style="font-size:13px;">${data.education}</p>
   </div>
@@ -84,11 +104,49 @@ function ResumeBuilder() {
     <p style="font-size:13px; color:#555;">${data.experience}</p>
     <div class="section-title">Projects</div>
     <p style="font-size:13px; color:#555;">${data.projects}</p>
+    ${customSections}
   </div>
 </div>
 <div class="footer">⚡ Generated by HireIQ — AI Resume Suite by Arun Kumar</div>
 </body>
 </html>`;
+  };
+
+  const handleGenerate = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // Custom fields ko prompt mein include karo
+      const customFieldsText = customFields.length > 0
+        ? customFields.map(f => `${f.fieldName}: ${f.fieldValue}`).join('\n')
+        : '';
+
+      const fullPrompt = `
+        Name: ${form.name}
+        Role: ${form.role}
+        Email: ${form.email}
+        Phone: ${form.phone}
+        Experience: ${form.experience}
+        Skills: ${form.skills}
+        Education: ${form.education}
+        Projects: ${form.projects}
+        ${customFieldsText ? `Additional Sections:\n${customFieldsText}` : ''}
+      `;
+
+      // ✅ .NET API se PDF generate karo
+      const res = await generatePdf(generateDemoHtml(form, customFields));
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      setHtmlPreview(generateDemoHtml(form, customFields));
+      setGenerated(true);
+    } catch {
+      // Fallback — demo HTML
+      setHtmlPreview(generateDemoHtml(form, customFields));
+      setGenerated(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDownload = () => {
     const blob = new Blob([htmlPreview], { type: 'text/html' });
@@ -117,12 +175,10 @@ function ResumeBuilder() {
 
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{
-          fontFamily: 'Syne, sans-serif',
-          fontSize: '24px', fontWeight: '800', marginBottom: '4px',
-        }}>Resume Builder</h1>
+        <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '24px', fontWeight: '800', marginBottom: '4px' }}>
+          Resume Builder
+        </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
           AI-powered professional resume generation
         </p>
@@ -132,10 +188,7 @@ function ResumeBuilder() {
 
         {/* Form */}
         <div className="card" style={{ borderColor: 'var(--accent-green)' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            marginBottom: '20px',
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
             <div style={{
               width: '36px', height: '36px', borderRadius: '10px',
               background: 'var(--gradient-3)',
@@ -143,10 +196,7 @@ function ResumeBuilder() {
             }}>
               <FileEdit size={18} color="white" />
             </div>
-            <h3 style={{
-              fontFamily: 'Syne, sans-serif',
-              fontSize: '16px', fontWeight: '700',
-            }}>Your Details</h3>
+            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '16px', fontWeight: '700' }}>Your Details</h3>
           </div>
 
           <form onSubmit={handleGenerate}>
@@ -154,25 +204,17 @@ function ResumeBuilder() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
                 <label style={labelStyle}><User size={12} />Full Name</label>
-                <input
-                  type="text" placeholder="Arun Kumar"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                  required style={inputStyle}
+                <input type="text" placeholder="Arun Kumar" value={form.name} required
+                  onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'}
-                />
+                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
               </div>
               <div>
                 <label style={labelStyle}><Briefcase size={12} />Job Role</label>
-                <input
-                  type="text" placeholder="Python Developer"
-                  value={form.role}
-                  onChange={e => setForm({ ...form, role: e.target.value })}
-                  required style={inputStyle}
+                <input type="text" placeholder="Python Developer" value={form.role} required
+                  onChange={e => setForm({ ...form, role: e.target.value })} style={inputStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'}
-                />
+                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
               </div>
             </div>
 
@@ -180,93 +222,157 @@ function ResumeBuilder() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
                 <label style={labelStyle}><Mail size={12} />Email</label>
-                <input
-                  type="email" placeholder="arun@email.com"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  style={inputStyle}
+                <input type="email" placeholder="arun@email.com" value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })} style={inputStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'}
-                />
+                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
               </div>
               <div>
                 <label style={labelStyle}><Phone size={12} />Phone</label>
-                <input
-                  type="text" placeholder="+91-98XXX-XXXXX"
-                  value={form.phone}
-                  onChange={e => setForm({ ...form, phone: e.target.value })}
-                  style={inputStyle}
+                <input type="text" placeholder="+91-98XXX-XXXXX" value={form.phone}
+                  onChange={e => setForm({ ...form, phone: e.target.value })} style={inputStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'}
-                />
+                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
               </div>
             </div>
 
             {/* Experience */}
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}><Briefcase size={12} />Experience</label>
-              <textarea
-                placeholder="2 years at HCLTech — Python, Django, Microsoft Fabric..."
-                value={form.experience}
+              <textarea placeholder="2 years at HCLTech — Python, Django, Microsoft Fabric..."
+                value={form.experience} rows={3} style={{ ...inputStyle, resize: 'vertical' }}
                 onChange={e => setForm({ ...form, experience: e.target.value })}
-                rows={3} style={{ ...inputStyle, resize: 'vertical' }}
                 onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'}
-              />
+                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
             </div>
 
             {/* Skills */}
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}><Code size={12} />Skills (comma separated)</label>
-              <input
-                type="text" placeholder="Python, Django, SQL, REST APIs, Git, Docker"
-                value={form.skills}
+              <input type="text" placeholder="Python, Django, SQL, REST APIs, Git, Docker"
+                value={form.skills} required style={inputStyle}
                 onChange={e => setForm({ ...form, skills: e.target.value })}
-                required style={inputStyle}
                 onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'}
-              />
+                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
             </div>
 
             {/* Education */}
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}><GraduationCap size={12} />Education</label>
-              <input
-                type="text" placeholder="B.Tech CS — NIT Patna 2024, CGPA 8.5"
-                value={form.education}
+              <input type="text" placeholder="B.Tech CS — NIT Patna 2024, CGPA 8.5"
+                value={form.education} style={inputStyle}
                 onChange={e => setForm({ ...form, education: e.target.value })}
-                style={inputStyle}
                 onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'}
-              />
+                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
             </div>
 
             {/* Projects */}
             <div style={{ marginBottom: '20px' }}>
               <label style={labelStyle}><FolderOpen size={12} />Projects</label>
-              <textarea
-                placeholder="HireIQ AI Resume Suite — React, .NET, Python, ML..."
-                value={form.projects}
+              <textarea placeholder="HireIQ AI Resume Suite — React, .NET, Python, ML..."
+                value={form.projects} rows={3} style={{ ...inputStyle, resize: 'vertical' }}
                 onChange={e => setForm({ ...form, projects: e.target.value })}
-                rows={3} style={{ ...inputStyle, resize: 'vertical' }}
                 onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'}
-              />
+                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
             </div>
 
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading}
-              style={{
-                width: '100%', justifyContent: 'center',
-                padding: '14px',
-                background: 'var(--gradient-3)',
-              }}
-            >
-              {loading ? 'Generating...' : (
-                <><Zap size={16} /> Generate Resume</>
+            {/* ✅ Custom Fields Section */}
+            <div style={{
+              marginBottom: '20px', padding: '16px',
+              background: 'var(--bg-secondary)', borderRadius: '10px',
+              border: '1px dashed var(--border-bright)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                  Custom Sections
+                </span>
+                <button type="button" onClick={() => setAddingField(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    background: 'none', border: '1px solid var(--accent-green)',
+                    color: 'var(--accent-green)', borderRadius: '6px',
+                    padding: '4px 10px', fontSize: '12px', cursor: 'pointer'
+                  }}>
+                  <Plus size={12} /> Add Field
+                </button>
+              </div>
+
+              {/* Existing custom fields */}
+              {customFields.map(f => (
+                <div key={f.id} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: '8px',
+                  marginBottom: '8px', padding: '10px',
+                  background: 'var(--bg-card)', borderRadius: '8px',
+                  border: '1px solid var(--border)'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '600', marginBottom: '2px' }}>
+                      {f.fieldName}
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                      {f.fieldValue}
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => handleDeleteField(f.id)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: '#ef4444', padding: '2px', flexShrink: 0
+                    }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+
+              {/* Add new field form */}
+              {addingField && (
+                <div style={{
+                  marginTop: '10px', padding: '12px',
+                  background: 'var(--bg-card)', borderRadius: '8px',
+                  border: '1px solid var(--accent-green)'
+                }}>
+                  <input type="text" placeholder="Section name (e.g. Certifications)"
+                    value={newField.fieldName}
+                    onChange={e => setNewField({ ...newField, fieldName: e.target.value })}
+                    style={{ ...inputStyle, marginBottom: '8px' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
+                  <textarea placeholder="Section content..."
+                    value={newField.fieldValue} rows={2}
+                    onChange={e => setNewField({ ...newField, fieldValue: e.target.value })}
+                    style={{ ...inputStyle, resize: 'vertical', marginBottom: '8px' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" onClick={handleAddField}
+                      style={{
+                        flex: 1, padding: '8px', background: 'var(--gradient-3)',
+                        border: 'none', borderRadius: '6px', color: 'white',
+                        fontSize: '13px', cursor: 'pointer', fontWeight: '600'
+                      }}>
+                      Save Field
+                    </button>
+                    <button type="button" onClick={() => { setAddingField(false); setNewField({ fieldName: '', fieldValue: '', fieldType: 'text' }); }}
+                      style={{
+                        padding: '8px 14px', background: 'none',
+                        border: '1px solid var(--border)', borderRadius: '6px',
+                        color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer'
+                      }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
+
+              {customFields.length === 0 && !addingField && (
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  Add custom sections like Certifications, Languages, Achievements
+                </p>
+              )}
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={loading}
+              style={{ width: '100%', justifyContent: 'center', padding: '14px', background: 'var(--gradient-3)' }}>
+              {loading ? 'Generating...' : <><Zap size={16} /> Generate Resume</>}
             </button>
           </form>
         </div>
@@ -274,27 +380,16 @@ function ResumeBuilder() {
         {/* Preview */}
         <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
           <div style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center',
-            justifyContent: 'space-between',
+            padding: '16px 20px', borderBottom: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Eye size={16} color="var(--accent-green)" />
-              <span style={{
-                fontFamily: 'Syne, sans-serif',
-                fontSize: '14px', fontWeight: '700',
-              }}>Preview</span>
+              <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '700' }}>Preview</span>
             </div>
             {generated && (
-              <button
-                onClick={handleDownload}
-                className="btn-primary"
-                style={{
-                  padding: '8px 16px', fontSize: '13px',
-                  background: 'var(--gradient-3)',
-                }}
-              >
+              <button onClick={handleDownload} className="btn-primary"
+                style={{ padding: '8px 16px', fontSize: '13px', background: 'var(--gradient-3)' }}>
                 <Download size={14} /> Download HTML
               </button>
             )}
@@ -302,22 +397,16 @@ function ResumeBuilder() {
 
           {!generated ? (
             <div style={{
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              height: '500px', color: 'var(--text-muted)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', height: '500px', color: 'var(--text-muted)',
             }}>
               <FileEdit size={48} style={{ marginBottom: '12px', opacity: 0.2 }} />
               <p style={{ fontSize: '14px' }}>Fill the form and click Generate!</p>
             </div>
           ) : (
-            <iframe
-              srcDoc={htmlPreview}
-              style={{
-                width: '100%', height: '600px',
-                border: 'none', background: 'white',
-              }}
-              title="Resume Preview"
-            />
+            <iframe srcDoc={htmlPreview}
+              style={{ width: '100%', height: '600px', border: 'none', background: 'white' }}
+              title="Resume Preview" />
           )}
         </div>
       </div>

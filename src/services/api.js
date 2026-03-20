@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5201',
+  baseURL: process.env.REACT_APP_API_URL || 'https://localhost:7194',
 });
 //Request interceptor to add token to headers
 // Har request me token add karo
@@ -32,6 +32,28 @@ export const runScreening = (data) => API.post('/api/screening/run', data);
 export const getScreeningResults = () => API.get('/api/screening/all');
 
 // Chat
-export const sendMessage = (data) => API.post('/api/chat', data);
+// ✅ sendMessage update
+export const sendMessage = (message) => API.post('/api/chat', { message });
+
+// ✅ clearChat add karo
+export const clearChat = () => API.delete('/api/chat/clear');
+export const getChatSuggestions = () => API.get('/api/chat/suggestions');
+export const generatePdf = (htmlContent) =>
+  API.post('/api/resume-builder/generate-pdf',
+      { htmlContent },
+      { responseType: 'blob' } // ✅ PDF binary
+  );
+
+// PDF screening
+export const screenPdfResume = (formData) =>
+  API.post('/api/pdf/screen', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
+// PDF AI review
+export const reviewPdfResume = (formData) =>
+  API.post('/api/pdf/review', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+  });
 
 export default API;

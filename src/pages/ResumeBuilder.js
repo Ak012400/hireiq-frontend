@@ -116,8 +116,7 @@ function ResumeBuilder() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await generatePdf(generateDemoHtml(form, customFields));
-      const blob = new Blob([res.data], { type: 'application/pdf' }); // ✅ blob rakho
+      await generatePdf(generateDemoHtml(form, customFields)); // ✅ blob hata do
       setHtmlPreview(generateDemoHtml(form, customFields));
       setGenerated(true);
     } catch {

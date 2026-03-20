@@ -116,37 +116,17 @@ function ResumeBuilder() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Custom fields ko prompt mein include karo
-      const customFieldsText = customFields.length > 0
-        ? customFields.map(f => `${f.fieldName}: ${f.fieldValue}`).join('\n')
-        : '';
-
-      const fullPrompt = `
-        Name: ${form.name}
-        Role: ${form.role}
-        Email: ${form.email}
-        Phone: ${form.phone}
-        Experience: ${form.experience}
-        Skills: ${form.skills}
-        Education: ${form.education}
-        Projects: ${form.projects}
-        ${customFieldsText ? `Additional Sections:\n${customFieldsText}` : ''}
-      `;
-
-      // ✅ .NET API se PDF generate karo
       const res = await generatePdf(generateDemoHtml(form, customFields));
-      const blob = new Blob([res.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
+      const blob = new Blob([res.data], { type: 'application/pdf' }); // ✅ blob rakho
       setHtmlPreview(generateDemoHtml(form, customFields));
       setGenerated(true);
     } catch {
-      // Fallback — demo HTML
       setHtmlPreview(generateDemoHtml(form, customFields));
       setGenerated(true);
     } finally {
       setLoading(false);
     }
-  };
+};
 
   const handleDownload = () => {
     const blob = new Blob([htmlPreview], { type: 'text/html' });

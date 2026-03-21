@@ -1,17 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { FileEdit, Zap, Download, Eye, User, Briefcase, Code, GraduationCap, FolderOpen, Mail, Phone, Plus, Trash2 } from 'lucide-react';
-import { generatePdf, getCustomFields, createCustomField, deleteCustomField } from '../services/api';
-
+import { FileEdit, Zap, Download, Eye, Briefcase, Code, GraduationCap, FolderOpen, Phone, Plus, Trash2, Sparkles, Award } from 'lucide-react';
+import { generatePdf, getCustomFields, createCustomField, deleteCustomField, generateFieldContent } from '../services/api';
 function ResumeBuilder() {
+  const user = JSON.parse(localStorage.getItem('hireiq_user') || '{}');
+
   const [form, setForm] = useState({
-    name: '', role: '', experience: '',
-    skills: '', education: '', projects: '',
-    email: '', phone: '',
+    name: user.name || '',
+    email: user.email || '',
+    phone: '',
+    role: '',
+    summary: '',
+    experience: '',
+    skills: '',
+    education: '',
+    projects: '',
   });
+
   const [customFields, setCustomFields] = useState([]);
   const [newField, setNewField] = useState({ fieldName: '', fieldValue: '', fieldType: 'text' });
   const [addingField, setAddingField] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fieldLoading, setFieldLoading] = useState({});
   const [htmlPreview, setHtmlPreview] = useState('');
   const [generated, setGenerated] = useState(false);
 
@@ -27,6 +36,80 @@ function ResumeBuilder() {
       setCustomFields([]);
     }
   };
+
+  const handleAiGenerate = async (fieldKey) => {
+    setFieldLoading(prev => ({ ...prev, [fieldKey]: true }));
+    try {
+      // ✅ Existing form data context mein do
+      const context = `
+  User context:
+  - Name: ${form.name || 'Not provided'}
+  - Role: ${form.role || 'Not provided'}
+  - Experience: ${form.experience || 'Not provided'}
+  - Skills: ${form.skills || 'Not provided'}
+  - Education: ${form.education || 'Not provided'}
+  - Projects: ${form.projects || 'Not provided'}
+  - Summary: ${form.summary || 'Not provided'}
+  `.trim();
+  
+      const prompts = {
+        role: `${context}\n\nBased on this person's background, suggest ONE specific professional job role title for their resume. Return ONLY the role title.`,
+        summary: `${context}\n\nWrite a personalized 2-3 line professional summary for this person's resume using their actual background. Return ONLY the summary text.`,
+        experience: `${context}\n\nWrite a professional 3-4 line work experience description using this person's actual role and skills. Return ONLY the experience text.`,
+        skills: `${context}\n\nBased on this person's role and experience, suggest 10 relevant technical skills as comma separated values. Return ONLY the comma separated list.`,
+        education: `${context}\n\nWrite a professional education entry for this person. Return ONLY the education text like: B.Tech Computer Science — University 2024, CGPA 8.5`,
+        projects: `${context}\n\nWrite a 3-4 line description of a relevant project for this person based on their skills and role. Return ONLY the project description.`,
+      };
+  
+      const res = await generateFieldContent(prompts[fieldKey]);
+      const text = res.data.result?.trim();
+      if (text) setForm(prev => ({ ...prev, [fieldKey]: text }));
+    } catch {
+      // ignore
+    } finally {
+      setFieldLoading(prev => ({ ...prev, [fieldKey]: false }));
+    }
+  };
+
+  const AiButton = ({ fieldKey }) => (
+    <button
+      type="button"
+      onClick={() => handleAiGenerate(fieldKey)}
+      disabled={fieldLoading[fieldKey]}
+      title="Generate with AI"
+      style={{
+        display: 'flex', alignItems: 'center', gap: '4px',
+        background: 'none', border: '1px solid var(--accent-green)',
+        borderRadius: '6px', padding: '3px 8px',
+        cursor: fieldLoading[fieldKey] ? 'not-allowed' : 'pointer',
+        color: 'var(--accent-green)', fontSize: '11px',
+        transition: 'all 0.2s', opacity: fieldLoading[fieldKey] ? 0.6 : 1,
+        fontFamily: 'DM Sans, sans-serif',
+      }}
+      onMouseEnter={e => {
+        if (!fieldLoading[fieldKey]) {
+          e.currentTarget.style.background = 'var(--accent-green)';
+          e.currentTarget.style.color = 'white';
+        }
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'none';
+        e.currentTarget.style.color = 'var(--accent-green)';
+      }}
+    >
+      {fieldLoading[fieldKey]
+        ? [0, 1, 2].map(i => (
+            <span key={i} style={{
+              width: '4px', height: '4px', borderRadius: '50%',
+              background: 'var(--accent-green)',
+              animation: `bounce 1.2s ${i * 0.2}s infinite`,
+              display: 'inline-block'
+            }} />
+          ))
+        : <><Sparkles size={10} /> AI</>
+      }
+    </button>
+  );
 
   const handleAddField = async () => {
     if (!newField.fieldName.trim() || !newField.fieldValue.trim()) return;
@@ -54,10 +137,10 @@ function ResumeBuilder() {
     }
   };
 
-  const generateDemoHtml = (data, customFields) => {
-    const customSections = customFields.map(f => `
+  const generateDemoHtml = (data, fields) => {
+    const customSections = fields.map(f => `
       <div class="section-title">${f.fieldName}</div>
-      <p style="font-size:13px; color:#555;">${f.fieldValue}</p>
+      <p style="font-size:13px; color:#555; line-height:1.6;">${f.fieldValue}</p>
     `).join('');
 
     return `<!DOCTYPE html>
@@ -72,14 +155,14 @@ function ResumeBuilder() {
   .role { font-size: 16px; color: #a8b2d8; margin-top: 6px; }
   .contact { margin-top: 10px; font-size: 13px; color: #8892b0; }
   .contact span { margin-right: 20px; }
+  .summary-bar { background: #f0f4ff; padding: 14px 40px; border-left: 4px solid #1a1a2e; font-size: 13px; color: #444; line-height: 1.7; font-style: italic; }
   .body { display: flex; }
   .sidebar { width: 32%; background: #f8f9fa; padding: 25px 20px; }
   .main { width: 68%; padding: 25px 30px; }
-  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #1a1a2e; border-bottom: 2px solid #1a1a2e; padding-bottom: 5px; margin-bottom: 12px; margin-top: 20px; }
+  .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #1a1a2e; border-bottom: 2px solid #1a1a2e; padding-bottom: 5px; margin-bottom: 12px; margin-top: 20px; }
   .section-title:first-child { margin-top: 0; }
   .skill-tag { display: inline-block; background: #EBF5FB; color: #1a1a2e; padding: 4px 12px; border-radius: 15px; margin: 3px 2px; font-size: 12px; }
-  ul { padding-left: 18px; }
-  li { margin-bottom: 5px; font-size: 13px; line-height: 1.5; }
+  li { margin-bottom: 5px; font-size: 13px; line-height: 1.6; }
   .footer { text-align: center; padding: 10px; font-size: 10px; color: #bbb; border-top: 1px solid #eee; }
 </style>
 </head>
@@ -92,18 +175,19 @@ function ResumeBuilder() {
     <span>📱 ${data.phone || '+91-XXXXX-XXXXX'}</span>
   </div>
 </div>
+${data.summary ? `<div class="summary-bar">${data.summary}</div>` : ''}
 <div class="body">
   <div class="sidebar">
     <div class="section-title">Skills</div>
     ${data.skills.split(',').map(s => `<span class="skill-tag">${s.trim()}</span>`).join('')}
     <div class="section-title">Education</div>
-    <p style="font-size:13px;">${data.education}</p>
+    <p style="font-size:13px; line-height:1.6;">${data.education}</p>
   </div>
   <div class="main">
     <div class="section-title">Experience</div>
-    <p style="font-size:13px; color:#555;">${data.experience}</p>
+    <p style="font-size:13px; color:#555; line-height:1.6;">${data.experience}</p>
     <div class="section-title">Projects</div>
-    <p style="font-size:13px; color:#555;">${data.projects}</p>
+    <p style="font-size:13px; color:#555; line-height:1.6;">${data.projects}</p>
     ${customSections}
   </div>
 </div>
@@ -116,7 +200,7 @@ function ResumeBuilder() {
     e.preventDefault();
     setLoading(true);
     try {
-      await generatePdf(generateDemoHtml(form, customFields)); // ✅ blob hata do
+      await generatePdf(generateDemoHtml(form, customFields));
       setHtmlPreview(generateDemoHtml(form, customFields));
       setGenerated(true);
     } catch {
@@ -125,7 +209,7 @@ function ResumeBuilder() {
     } finally {
       setLoading(false);
     }
-};
+  };
 
   const handleDownload = () => {
     const blob = new Blob([htmlPreview], { type: 'text/html' });
@@ -147,10 +231,14 @@ function ResumeBuilder() {
     boxSizing: 'border-box', transition: 'border-color 0.2s',
   };
 
-  const labelStyle = {
-    display: 'flex', alignItems: 'center', gap: '6px',
-    fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px',
-  };
+  const labelRow = (icon, text, fieldKey = null) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        {icon}{text}
+      </label>
+      {fieldKey && <AiButton fieldKey={fieldKey} />}
+    </div>
+  );
 
   return (
     <div>
@@ -179,45 +267,63 @@ function ResumeBuilder() {
           </div>
 
           <form onSubmit={handleGenerate}>
-            {/* Name + Role */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-              <div>
-                <label style={labelStyle}><User size={12} />Full Name</label>
-                <input type="text" placeholder="Arun Kumar" value={form.name} required
-                  onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
-              </div>
-              <div>
-                <label style={labelStyle}><Briefcase size={12} />Job Role</label>
-                <input type="text" placeholder="Python Developer" value={form.role} required
-                  onChange={e => setForm({ ...form, role: e.target.value })} style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
-              </div>
-            </div>
 
-            {/* Email + Phone */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-              <div>
-                <label style={labelStyle}><Mail size={12} />Email</label>
-                <input type="email" placeholder="arun@email.com" value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })} style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
+            {/* Personal Details — NO AI buttons */}
+            <div style={{
+              marginBottom: '16px', padding: '14px',
+              background: 'var(--bg-secondary)', borderRadius: '10px',
+              border: '1px solid var(--border)'
+            }}>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                Personal Info — auto-loaded
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Full Name</label>
+                  <input type="text" value={form.name} readOnly
+                    style={{ ...inputStyle, opacity: 0.7, cursor: 'not-allowed' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Email</label>
+                  <input type="email" value={form.email} readOnly
+                    style={{ ...inputStyle, opacity: 0.7, cursor: 'not-allowed' }} />
+                </div>
               </div>
               <div>
-                <label style={labelStyle}><Phone size={12} />Phone</label>
+                <label style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>
+                  <Phone size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                  Phone (manual)
+                </label>
                 <input type="text" placeholder="+91-98XXX-XXXXX" value={form.phone}
-                  onChange={e => setForm({ ...form, phone: e.target.value })} style={inputStyle}
+                  onChange={e => setForm({ ...form, phone: e.target.value })}
+                  style={inputStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
               </div>
             </div>
 
-            {/* Experience */}
+            {/* Job Role — AI */}
             <div style={{ marginBottom: '12px' }}>
-              <label style={labelStyle}><Briefcase size={12} />Experience</label>
+              {labelRow(<Briefcase size={12} />, 'Job Role', 'role')}
+              <input type="text" placeholder="Python Developer" value={form.role} required
+                onChange={e => setForm({ ...form, role: e.target.value })} style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
+            </div>
+
+            {/* Professional Summary — AI */}
+            <div style={{ marginBottom: '12px' }}>
+              {labelRow(<Award size={12} />, 'Professional Summary', 'summary')}
+              <textarea placeholder="A brief professional summary highlighting your expertise, achievements and career goals..."
+                value={form.summary} rows={3} style={{ ...inputStyle, resize: 'vertical' }}
+                onChange={e => setForm({ ...form, summary: e.target.value })}
+                onFocus={e => e.target.style.borderColor = 'var(--accent-green)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
+            </div>
+
+            {/* Experience — AI */}
+            <div style={{ marginBottom: '12px' }}>
+              {labelRow(<Briefcase size={12} />, 'Experience', 'experience')}
               <textarea placeholder="2 years at HCLTech — Python, Django, Microsoft Fabric..."
                 value={form.experience} rows={3} style={{ ...inputStyle, resize: 'vertical' }}
                 onChange={e => setForm({ ...form, experience: e.target.value })}
@@ -225,9 +331,9 @@ function ResumeBuilder() {
                 onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
             </div>
 
-            {/* Skills */}
+            {/* Skills — AI */}
             <div style={{ marginBottom: '12px' }}>
-              <label style={labelStyle}><Code size={12} />Skills (comma separated)</label>
+              {labelRow(<Code size={12} />, 'Skills (comma separated)', 'skills')}
               <input type="text" placeholder="Python, Django, SQL, REST APIs, Git, Docker"
                 value={form.skills} required style={inputStyle}
                 onChange={e => setForm({ ...form, skills: e.target.value })}
@@ -235,9 +341,9 @@ function ResumeBuilder() {
                 onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
             </div>
 
-            {/* Education */}
+            {/* Education — AI */}
             <div style={{ marginBottom: '12px' }}>
-              <label style={labelStyle}><GraduationCap size={12} />Education</label>
+              {labelRow(<GraduationCap size={12} />, 'Education', 'education')}
               <input type="text" placeholder="B.Tech CS — NIT Patna 2024, CGPA 8.5"
                 value={form.education} style={inputStyle}
                 onChange={e => setForm({ ...form, education: e.target.value })}
@@ -245,9 +351,9 @@ function ResumeBuilder() {
                 onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
             </div>
 
-            {/* Projects */}
+            {/* Projects — AI */}
             <div style={{ marginBottom: '20px' }}>
-              <label style={labelStyle}><FolderOpen size={12} />Projects</label>
+              {labelRow(<FolderOpen size={12} />, 'Projects', 'projects')}
               <textarea placeholder="HireIQ AI Resume Suite — React, .NET, Python, ML..."
                 value={form.projects} rows={3} style={{ ...inputStyle, resize: 'vertical' }}
                 onChange={e => setForm({ ...form, projects: e.target.value })}
@@ -255,7 +361,7 @@ function ResumeBuilder() {
                 onBlur={e => e.target.style.borderColor = 'var(--border-bright)'} />
             </div>
 
-            {/* ✅ Custom Fields Section */}
+            {/* Custom Sections */}
             <div style={{
               marginBottom: '20px', padding: '16px',
               background: 'var(--bg-secondary)', borderRadius: '10px',
@@ -276,7 +382,6 @@ function ResumeBuilder() {
                 </button>
               </div>
 
-              {/* Existing custom fields */}
               {customFields.map(f => (
                 <div key={f.id} style={{
                   display: 'flex', alignItems: 'flex-start', gap: '8px',
@@ -293,16 +398,12 @@ function ResumeBuilder() {
                     </div>
                   </div>
                   <button type="button" onClick={() => handleDeleteField(f.id)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: '#ef4444', padding: '2px', flexShrink: 0
-                    }}>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px', flexShrink: 0 }}>
                     <Trash2 size={14} />
                   </button>
                 </div>
               ))}
 
-              {/* Add new field form */}
               {addingField && (
                 <div style={{
                   marginTop: '10px', padding: '12px',
@@ -330,7 +431,8 @@ function ResumeBuilder() {
                       }}>
                       Save Field
                     </button>
-                    <button type="button" onClick={() => { setAddingField(false); setNewField({ fieldName: '', fieldValue: '', fieldType: 'text' }); }}
+                    <button type="button"
+                      onClick={() => { setAddingField(false); setNewField({ fieldName: '', fieldValue: '', fieldType: 'text' }); }}
                       style={{
                         padding: '8px 14px', background: 'none',
                         border: '1px solid var(--border)', borderRadius: '6px',
@@ -389,6 +491,13 @@ function ResumeBuilder() {
           )}
         </div>
       </div>
+
+      <style>{`
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+      `}</style>
     </div>
   );
 }

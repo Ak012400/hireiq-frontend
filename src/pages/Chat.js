@@ -48,13 +48,14 @@ function Chat() {
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setInput('');
     setLoading(true);
-
+    setSuggestions([]); // Clear suggestions on new message
     try {
       const res = await sendMessage(text);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: res.data.response
       }]);
+      loadSuggestions(); // Load new suggestions after response
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
@@ -188,7 +189,7 @@ function Chat() {
       </div>
 
       {/* Suggestions */}
-      {messages.length <= 1 && (
+      {messages[messages.length - 1]?.role === 'assistant' && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
           {suggestionsLoading
             ? <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Loading suggestions...</span>

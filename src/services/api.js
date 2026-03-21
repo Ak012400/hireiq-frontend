@@ -60,4 +60,6 @@ export const reviewPdfResume = (formData) =>
   export const createCustomField = (data) => API.post('/api/resume-fields', data);
   export const updateCustomField = (id, data) => API.put(`/api/resume-fields/${id}`, data);
   export const deleteCustomField = (id) => API.delete(`/api/resume-fields/${id}`);
+  export const generateFieldContent = (prompt) => 
+    API.post('/api/chat/generate-field', { prompt });
 export default API;

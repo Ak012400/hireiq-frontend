@@ -9,7 +9,7 @@ import Screening from './pages/Screening';
 import Chat from './pages/Chat';
 import ResumeBuilder from './pages/ResumeBuilder';
 import Layout from './components/Layout';
-
+import PdfTools from './pages/PdfTools';
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('hireiq_token');
   return token ? children : <Navigate to="/login" />;
@@ -32,6 +32,7 @@ function App() {
           <Route path="screening" element={<Screening />} />
           <Route path="chat" element={<Chat />} />
           <Route path="resume-builder" element={<ResumeBuilder />} />
+          <Route path="pdf-tools" element={<PdfTools />} />
         </Route>
       </Routes>
     </BrowserRouter>

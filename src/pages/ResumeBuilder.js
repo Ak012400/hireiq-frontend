@@ -220,6 +220,21 @@ ${data.summary ? `<div class="summary-bar">${data.summary}</div>` : ''}
     a.click();
     URL.revokeObjectURL(url);
   };
+  const handleDownloadPdf = async () => {
+    try {
+      const res = await generatePdf(htmlPreview);
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${form.name.replace(' ', '_')}_Resume.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // fallback — HTML download
+      handleDownload();
+    }
+  };
 
   const inputStyle = {
     width: '100%', padding: '10px 14px',
@@ -469,10 +484,16 @@ ${data.summary ? `<div class="summary-bar">${data.summary}</div>` : ''}
               <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '700' }}>Preview</span>
             </div>
             {generated && (
-              <button onClick={handleDownload} className="btn-primary"
-                style={{ padding: '8px 16px', fontSize: '13px', background: 'var(--gradient-3)' }}>
-                <Download size={14} /> Download HTML
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={handleDownload} className="btn-primary"
+                  style={{ padding: '8px 16px', fontSize: '13px', background: 'var(--gradient-3)' }}>
+                  <Download size={14} /> HTML
+                </button>
+                <button onClick={handleDownloadPdf} className="btn-primary"
+                  style={{ padding: '8px 16px', fontSize: '13px', background: 'var(--gradient-2)' }}>
+                  <Download size={14} /> PDF
+                </button>
+              </div>
             )}
           </div>
 

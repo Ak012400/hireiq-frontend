@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Briefcase,
   Search, MessageSquare, FileEdit, LogOut,
-  Menu, X, Zap
+  Menu, X, Zap, FileScan  // ✅ FileScan add karo
 } from 'lucide-react';
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { path: '/screening', icon: Search, label: 'Screening' },
   { path: '/chat', icon: MessageSquare, label: 'AI Chat' },
   { path: '/resume-builder', icon: FileEdit, label: 'Resume Builder' },
+  { path: '/pdf-tools', icon: FileScan, label: 'PDF Tools' },
 ];
 
 function Layout() {

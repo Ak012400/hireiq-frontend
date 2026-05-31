@@ -62,4 +62,9 @@ export const reviewPdfResume = (formData) =>
   export const deleteCustomField = (id) => API.delete(`/api/resume-fields/${id}`);
   export const generateFieldContent = (prompt) => 
     API.post('/api/chat/generate-field', { prompt });
+  // Template Editor APIs
+export const getTemplatesList = () => API.get('/api/template-editor/templates');
+export const getEditorState = (templateId) => API.get(`/api/template-editor/init/${templateId}`);
+export const saveResumeData = (data) => API.post('/api/template-editor/save', data);
+export const aiFillResume = (resumeText) => API.post('/api/template-editor/ai-fill', { resumeText });
 export default API;

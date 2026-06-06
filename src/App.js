@@ -11,6 +11,8 @@ import ResumeBuilder from './pages/ResumeBuilder';
 import Layout from './components/Layout';
 import PdfTools from './pages/PdfTools';
 import TemplateStudio from './SpecialEditor/TemplateStudio';
+import { ToastProvider } from './context/ToastContext';
+
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('hireiq_token');
   return token ? children : <Navigate to="/login" />;
@@ -18,6 +20,7 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
   return (
+    <ToastProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -38,6 +41,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </ToastProvider>
   );
 }
 

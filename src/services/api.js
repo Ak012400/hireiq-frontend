@@ -30,6 +30,7 @@ export const deleteJob = (id) => API.delete(`/api/jobs/${id}`);
 // Screening
 export const runScreening = (data) => API.post('/api/screening/run', data);
 export const getScreeningResults = () => API.get('/api/screening/all');
+export const updateCandidateStatus = (id, status) => API.patch(`/api/screening/${id}/status`, { status });
 
 // Chat
 // ✅ sendMessage update
@@ -72,7 +73,7 @@ export const aiFillResume = (resumeText) => API.post('/api/template-editor/ai-fi
 // Add this to your existing exports
 export const runBulkScreening = async (data) => {
     // data should look like: { jdId: "guid", resumeIds: ["guid1", "guid2"] }
-    const response = await API.post('/screening/bulk', data);
+    const response = await API.post('/api/screening/bulk', data);
     return response.data;
 };
 export default API;

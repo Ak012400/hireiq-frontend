@@ -3,8 +3,9 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Briefcase,
   Search, MessageSquare, FileEdit, LogOut,
-  Menu, X, Zap, FileScan  // ✅ FileScan add karo
+  Menu, X, Zap, FileScan, Layout as LayoutIcon  // ✅ Layout import fix
 } from 'lucide-react';
+
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -14,6 +15,7 @@ const navItems = [
   { path: '/chat', icon: MessageSquare, label: 'AI Chat' },
   { path: '/resume-builder', icon: FileEdit, label: 'Resume Builder' },
   { path: '/pdf-tools', icon: FileScan, label: 'PDF Tools' },
+  { path: 'template-studio', icon: LayoutIcon, label: 'Template Studio' }, // ✅ component ref, JSX nahi
 ];
 
 function Layout() {

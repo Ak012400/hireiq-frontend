@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Zap, TrendingUp, User, Briefcase, CheckCircle, XCircle } from 'lucide-react';
 import { getResumes, getJobs, runScreening, getScreeningResults } from '../services/api';
+import { runBulkScreening } from '../services/api'; 
 
 function Screening() {
   const [resumes, setResumes] = useState([]);
@@ -11,6 +12,11 @@ function Screening() {
   const [form, setForm] = useState({
     resumeId: '', jdId: '', deepAnalyze: false
   });
+  
+  // Bulk Screening States
+  const [selectedResumes, setSelectedResumes] = useState([]);
+  const [bulkResults, setBulkResults] = useState([]);
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -44,6 +50,34 @@ function Screening() {
       console.error(err);
     } finally {
       setScreening(false);
+    }
+  };
+
+  const handleResumeToggle = (id) => {
+    setSelectedResumes(prev => 
+        prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
+    );
+  };
+
+  const handleRunBulkPipeline = async () => {
+    // FIX: Replaced 'selectedJd' with 'form.jdId' from your existing state
+    if (!form.jdId || selectedResumes.length === 0) {
+        alert("Please select a Job Description and at least one Resume.");
+        return;
+    }
+
+    setIsBulkLoading(true);
+    try {
+        const data = await runBulkScreening({
+            jdId: form.jdId,
+            resumeIds: selectedResumes
+        });
+        setBulkResults(data); 
+    } catch (error) {
+        console.error("Bulk Pipeline failed", error);
+        alert("Error running the AI pipeline.");
+    } finally {
+        setIsBulkLoading(false);
     }
   };
 
@@ -117,27 +151,6 @@ function Screening() {
                 display: 'block', fontSize: '13px',
                 color: 'var(--text-secondary)', marginBottom: '8px',
               }}>
-                <User size={12} style={{ marginRight: '6px' }} />
-                Select Resume
-              </label>
-              <select
-                value={form.resumeId}
-                onChange={e => setForm({ ...form, resumeId: e.target.value })}
-                required style={selectStyle}
-              >
-                <option value="">-- Select Candidate --</option>
-                {resumes.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.candidateName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{
-                display: 'block', fontSize: '13px',
-                color: 'var(--text-secondary)', marginBottom: '8px',
-              }}>
                 <Briefcase size={12} style={{ marginRight: '6px' }} />
                 Select Job
               </label>
@@ -150,6 +163,27 @@ function Screening() {
                 {jobs.map(j => (
                   <option key={j.id} value={j.id}>
                     {j.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{
+                display: 'block', fontSize: '13px',
+                color: 'var(--text-secondary)', marginBottom: '8px',
+              }}>
+                <User size={12} style={{ marginRight: '6px' }} />
+                Select Single Resume
+              </label>
+              <select
+                value={form.resumeId}
+                onChange={e => setForm({ ...form, resumeId: e.target.value })}
+                style={selectStyle}
+              >
+                <option value="">-- Select Candidate (Optional for Bulk) --</option>
+                {resumes.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.candidateName}
                   </option>
                 ))}
               </select>
@@ -182,25 +216,58 @@ function Screening() {
           <button
             type="submit"
             className="btn-primary"
-            disabled={screening}
+            disabled={screening || !form.resumeId}
             style={{ background: 'var(--gradient-2)' }}
           >
             {screening ? (
               <>Screening... </>
             ) : (
-              <><Search size={16} /> Run Screening</>
+              <><Search size={16} /> Run Standard Screening</>
             )}
           </button>
         </form>
+
+        {/* FIX: Correctly mapped list for Bulk Selection UI */}
+        <div style={{ marginTop: '32px', borderTop: '1px solid var(--border-bright)', paddingTop: '20px' }}>
+            <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '700', marginBottom: '12px' }}>
+                Or Run Bulk Pipeline (Select Multiple Resumes)
+            </h4>
+            <div style={{
+                maxHeight: '130px', overflowY: 'auto', border: '1px solid var(--border-bright)', 
+                borderRadius: '8px', padding: '12px', background: 'var(--bg-secondary)',
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px'
+            }}>
+                {resumes.map(r => (
+                    <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        <input 
+                            type="checkbox" 
+                            checked={selectedResumes.includes(r.id)}
+                            onChange={() => handleResumeToggle(r.id)}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        {r.candidateName}
+                    </label>
+                ))}
+            </div>
+            <button 
+                type="button" 
+                onClick={handleRunBulkPipeline}
+                disabled={isBulkLoading || selectedResumes.length === 0 || !form.jdId}
+                className="btn-primary"
+                style={{ background: 'var(--gradient-3)', marginTop: '16px' }}
+            >
+                {isBulkLoading ? 'Running Bulk Pipeline...' : 'Run Bulk Pipeline'}
+            </button>
+        </div>
       </div>
 
-      {/* Results */}
+      {/* Standard Results */}
       <h2 style={{
         fontFamily: 'Syne, sans-serif',
         fontSize: '18px', fontWeight: '700',
         marginBottom: '16px',
       }}>
-        Screening Results ({results.length})
+        Standard Screening Results ({results.length})
       </h2>
 
       {loading ? (
@@ -292,6 +359,45 @@ function Screening() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Bulk Results Leaderboard */}
+      {bulkResults.length > 0 && (
+        <div className="card" style={{ marginTop: '32px' }}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '20px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-primary)' }}>
+                AI Ranked Leaderboard (Bulk Run)
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {bulkResults.map((result, index) => (
+                    <div key={result.id} style={{
+                        padding: '16px',
+                        borderLeft: `4px solid ${result.shortlisted ? '#10b981' : '#ef4444'}`,
+                        borderRadius: '8px',
+                        background: 'var(--bg-secondary)',
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>Rank #{index + 1}</h3>
+                            <span style={{
+                                padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: '700',
+                                background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6'
+                            }}>
+                                MiniLM Score: {(result.minilmScore * 100).toFixed(1)}%
+                            </span>
+                        </div>
+                        {result.shortlisted ? (
+                            <div style={{ marginTop: '12px', padding: '16px', background: 'var(--bg-primary)', border: '1px solid var(--border-bright)', borderRadius: '8px' }}>
+                                <h4 style={{ fontWeight: '700', color: 'var(--accent-purple)', marginBottom: '8px', fontSize: '14px' }}>Groq AI Deep Analysis:</h4>
+                                <p style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', fontSize: '13px', lineHeight: '1.6' }}>{result.analysis}</p>
+                            </div>
+                        ) : (
+                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '8px', fontSize: '13px' }}>
+                                Rejected: Score below 70% threshold.
+                            </p>
+                        )}
+                    </div>
+                ))}
+            </div>
         </div>
       )}
     </div>

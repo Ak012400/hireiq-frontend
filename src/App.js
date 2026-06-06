@@ -10,6 +10,7 @@ import Chat from './pages/Chat';
 import ResumeBuilder from './pages/ResumeBuilder';
 import Layout from './components/Layout';
 import PdfTools from './pages/PdfTools';
+import TemplateStudio from './SpecialEditor/TemplateStudio';
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('hireiq_token');
   return token ? children : <Navigate to="/login" />;
@@ -33,6 +34,7 @@ function App() {
           <Route path="chat" element={<Chat />} />
           <Route path="resume-builder" element={<ResumeBuilder />} />
           <Route path="pdf-tools" element={<PdfTools />} />
+          <Route path="template-studio" element={<TemplateStudio />} />
         </Route>
       </Routes>
     </BrowserRouter>

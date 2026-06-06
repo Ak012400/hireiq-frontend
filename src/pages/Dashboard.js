@@ -4,7 +4,7 @@ import {
   FileText, Briefcase, Search, MessageSquare, FileEdit,
   TrendingUp, Zap, ArrowRight, Users, CheckCircle, XCircle,
   Clock, ChevronRight, Video, BarChart2, GraduationCap,
-  BookOpen, Star, Target, Award
+  BookOpen, Star, Target, Award, FileScan
 } from 'lucide-react';
 import { getResumes, getJobs, getScreeningResults } from '../services/api';
 

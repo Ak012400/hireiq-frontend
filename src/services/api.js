@@ -75,6 +75,8 @@ export const aiRedesignResume = (formData) =>
   });
 export const aiGenerateResume = (data) =>
   API.post('/api/resume-builder/ai-generate', data); // { keywords, targetRole?, name? }
+export const coachResume = (data) =>
+  API.post('/api/resume-builder/coach', data); // { message, resume, history }
 
 // src/services/api.js
 

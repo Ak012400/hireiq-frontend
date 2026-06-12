@@ -7,7 +7,6 @@ import Resumes from './pages/Resumes';
 import Jobs from './pages/Jobs';
 import Screening from './pages/Screening';
 import Chat from './pages/Chat';
-import ResumeBuilder from './pages/ResumeBuilder';
 import Layout from './components/Layout';
 import PdfTools from './pages/PdfTools';
 import TemplateStudio from './SpecialEditor/TemplateStudio';
@@ -15,6 +14,7 @@ import InterviewRooms from './pages/InterviewRooms';
 import Analytics from './pages/Analytics';
 import JobBoard from './pages/JobBoard';
 import MockInterview from './pages/MockInterview';
+import ResumeStudio from './pages/ResumeStudio';
 import { ToastProvider } from './context/ToastContext';
 
 const PrivateRoute = ({ children }) => {
@@ -60,7 +60,8 @@ function App() {
             <Route path="mock-interview" element={<CandidateOnly><MockInterview /></CandidateOnly>} />
 
             {/* Shared */}
-            <Route path="resume-builder" element={<ResumeBuilder />} />
+            <Route path="resume-studio" element={<ResumeStudio />} /> {/* ✅ one hub: Builder + Coach + Enhancer + Templates */}
+            <Route path="resume-builder" element={<Navigate to="/resume-studio" replace />} />
             <Route path="chat" element={<Chat />} />
           </Route>
         </Routes>

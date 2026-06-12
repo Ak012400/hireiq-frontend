@@ -227,6 +227,32 @@ function MockInterview() {
         </div>
       </div>
 
+      {/* Strengths & Improvements (structured) */}
+      {(report.strengths?.length > 0 || report.improvements?.length > 0) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+          <div className="card">
+            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '700', marginBottom: '12px', color: '#10b981' }}>
+              ✓ Strengths
+            </h3>
+            {(report.strengths || []).map((s, i) => (
+              <div key={i} style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.7', display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ color: '#10b981', flexShrink: 0 }}>•</span><span>{s}</span>
+              </div>
+            ))}
+          </div>
+          <div className="card">
+            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '700', marginBottom: '12px', color: '#f59e0b' }}>
+              ↗ Areas to Improve
+            </h3>
+            {(report.improvements || []).map((s, i) => (
+              <div key={i} style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.7', display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ color: '#f59e0b', flexShrink: 0 }}>•</span><span>{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Full AI Report */}
       <div className="card" style={{ marginBottom: '20px' }}>
         <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: 'var(--accent-purple)' }}>

@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Briefcase, Search,
   MessageSquare, FileEdit, LogOut, Menu, X, Zap,
-  FileScan, Layout as LayoutIcon, Video, BarChart2,
+  Video, BarChart2,
   GraduationCap, BookOpen, Bell
 } from 'lucide-react';
 
@@ -13,20 +13,17 @@ const HIRER_NAV = [
   { path: '/jobs',             icon: Briefcase,       label: 'Jobs' },
   { path: '/screening',        icon: Search,          label: 'Screening' },
   { path: '/interview-rooms',  icon: Video,           label: 'Interview Rooms', badge: 'NEW' },
-  { path: '/analytics',        icon: BarChart2,       label: 'Analytics',       badge: 'NEW' },
+  { path: '/analytics',        icon: BarChart2,       label: 'Analytics' },
   { path: '/chat',             icon: MessageSquare,   label: 'AI Chat' },
-  { path: '/resume-builder',   icon: FileEdit,        label: 'Resume Builder' },
-  { path: '/pdf-tools',        icon: FileScan,        label: 'PDF Tools' },
-  { path: '/template-studio',  icon: LayoutIcon,      label: 'Templates' },
+  { path: '/resume-studio',    icon: FileEdit,        label: 'Resume Studio', badge: 'NEW' }, // ✅ Builder + Coach + Enhancer + Templates — one hub
 ];
 
 const CANDIDATE_NAV = [
   { path: '/',                 icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/resume-builder',   icon: FileEdit,        label: 'My Resume' },
-  { path: '/job-board',        icon: BookOpen,        label: 'Job Board', badge: 'NEW' },
-  { path: '/mock-interview',   icon: GraduationCap,   label: 'Mock Interview', badge: 'NEW' },
+  { path: '/resume-studio',    icon: FileEdit,        label: 'Resume Studio', badge: 'NEW' }, // ✅ one hub
+  { path: '/job-board',        icon: BookOpen,        label: 'Job Board' },
+  { path: '/mock-interview',   icon: GraduationCap,   label: 'Mock Interview' },
   { path: '/chat',             icon: MessageSquare,   label: 'AI Chat' },
-  { path: '/pdf-tools',        icon: FileScan,        label: 'PDF Tools' },
 ];
 
 function Layout() {

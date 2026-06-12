@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { FileEdit, Zap, Download, Eye, Briefcase, Code, GraduationCap, FolderOpen, Phone, Plus, Trash2, Sparkles, Award } from 'lucide-react';
-import { generatePdf, getCustomFields, createCustomField, deleteCustomField, generateFieldContent } from '../services/api';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileEdit, Zap, Download, Eye, Briefcase, Code, GraduationCap, FolderOpen, Phone, Plus, Trash2, Sparkles, Award, Upload, Wand2 } from 'lucide-react';
+import { generatePdf, getCustomFields, createCustomField, deleteCustomField, generateFieldContent, aiRedesignResume, aiGenerateResume } from '../services/api';
+import { TEMPLATES } from '../templates/resumeTemplates';
 function ResumeBuilder() {
   const user = JSON.parse(localStorage.getItem('hireiq_user') || '{}');
 
@@ -23,6 +24,95 @@ function ResumeBuilder() {
   const [fieldLoading, setFieldLoading] = useState({});
   const [htmlPreview, setHtmlPreview] = useState('');
   const [generated, setGenerated] = useState(false);
+
+  // ✅ Premium AI flows
+  const [structured, setStructured] = useState(null);       // full ResumeData from AI (rich arrays)
+  const [selectedTemplate, setSelectedTemplate] = useState('classic');
+  const [aiBusy, setAiBusy] = useState(null);                // 'redesign' | 'generate' | null
+  const [keywords, setKeywords] = useState('');
+  const fileInputRef = useRef(null);
+
+  // AI ResumeData → flatten into the form fields (keeps rich version in `structured`)
+  const applyResumeData = (d) => {
+    setStructured(d);
+    setForm(prev => ({
+      ...prev,
+      name: d.name || prev.name,
+      email: d.email || prev.email,
+      phone: d.phone || prev.phone,
+      role: d.role || prev.role,
+      summary: d.summary || '',
+      skills: (d.skills || []).join(', '),
+      experience: (d.experience || []).map(e => `${e.title}${e.company ? ' — ' + e.company : ''}: ${e.description}`).join('\n'),
+      education: (d.education || []).map(e => `${e.degree}${e.school ? ' — ' + e.school : ''}`).join('\n'),
+      projects: (d.projects || []).map(p => `${p.name}: ${p.description}`).join('\n'),
+    }));
+  };
+
+  // Build ResumeData for premium templates — AI arrays if available, form otherwise
+  const toResumeData = () => {
+    const extraFromFields = customFields.map(f => `${f.fieldName}: ${f.fieldValue}`).join(' · ');
+    const base = structured || {};
+    return {
+      name: form.name || 'Your Name',
+      role: form.role || '',
+      email: form.email || '',
+      phone: form.phone || base.phone || '',
+      linkedin: base.linkedin || '',
+      github: base.github || '',
+      summary: form.summary || '',
+      skills: form.skills ? form.skills.split(',').map(s => s.trim()).filter(Boolean) : (base.skills || []),
+      experience: structured?.experience?.length
+        ? structured.experience
+        : (form.experience ? [{ title: form.role || 'Experience', company: '', description: form.experience }] : []),
+      education: structured?.education?.length
+        ? structured.education
+        : (form.education ? [{ degree: form.education, school: '' }] : []),
+      projects: structured?.projects?.length
+        ? structured.projects
+        : (form.projects ? [{ name: 'Projects', description: form.projects }] : []),
+      extra: [base.extra, extraFromFields].filter(Boolean).join(' · '),
+    };
+  };
+
+  const buildHtml = () =>
+    selectedTemplate === 'classic'
+      ? generateDemoHtml(form, customFields)
+      : TEMPLATES[selectedTemplate].render(toResumeData());
+
+  // ✅ AI Redesign: upload existing resume PDF → AI restructures + improves it
+  const handleRedesignUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setAiBusy('redesign');
+    try {
+      const fd = new FormData();
+      fd.append('resumeFile', file);
+      const res = await aiRedesignResume(fd);
+      applyResumeData(res.data);
+      setGenerated(false);
+    } catch (err) {
+      alert(err.response?.data?.error || 'AI redesign failed. Try again.');
+    } finally {
+      setAiBusy(null);
+    }
+  };
+
+  // ✅ AI Generate: keywords → complete resume draft
+  const handleKeywordGenerate = async () => {
+    if (!keywords.trim()) return;
+    setAiBusy('generate');
+    try {
+      const res = await aiGenerateResume({ keywords, name: form.name });
+      applyResumeData(res.data);
+      setGenerated(false);
+    } catch (err) {
+      alert(err.response?.data?.error || 'AI generation failed. Try again.');
+    } finally {
+      setAiBusy(null);
+    }
+  };
 
   useEffect(() => {
     loadCustomFields();
@@ -199,12 +289,13 @@ ${data.summary ? `<div class="summary-bar">${data.summary}</div>` : ''}
   const handleGenerate = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const html = buildHtml(); // ✅ selected template (classic or premium)
     try {
-      await generatePdf(generateDemoHtml(form, customFields));
-      setHtmlPreview(generateDemoHtml(form, customFields));
+      await generatePdf(html);
+      setHtmlPreview(html);
       setGenerated(true);
     } catch {
-      setHtmlPreview(generateDemoHtml(form, customFields));
+      setHtmlPreview(html);
       setGenerated(true);
     } finally {
       setLoading(false);
@@ -264,6 +355,61 @@ ${data.summary ? `<div class="summary-bar">${data.summary}</div>` : ''}
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
           AI-powered professional resume generation
         </p>
+      </div>
+
+      {/* ✅ AI Quick Start */}
+      <div className="card" style={{ marginBottom: '20px', borderColor: 'var(--accent-purple)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+          <Wand2 size={16} color="var(--accent-purple)" />
+          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '700' }}>AI Quick Start</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>— upload your old resume or type keywords, AI does the rest</span>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleRedesignUpload} style={{ display: 'none' }} />
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={aiBusy !== null}
+            className="btn-primary"
+            style={{ padding: '10px 18px', fontSize: '13px', background: 'var(--gradient-2)', opacity: aiBusy ? 0.6 : 1 }}>
+            <Upload size={14} /> {aiBusy === 'redesign' ? 'AI is redesigning…' : 'Upload PDF → AI Redesign'}
+          </button>
+          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>or</span>
+          <input type="text" placeholder="e.g. senior react developer, 3 years, fintech"
+            value={keywords} onChange={e => setKeywords(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleKeywordGenerate()}
+            style={{
+              flex: 1, minWidth: '220px', padding: '10px 14px',
+              background: 'var(--bg-secondary)', border: '1px solid var(--border-bright)',
+              borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', outline: 'none',
+            }} />
+          <button type="button" onClick={handleKeywordGenerate} disabled={aiBusy !== null || !keywords.trim()}
+            className="btn-primary"
+            style={{ padding: '10px 18px', fontSize: '13px', background: 'var(--gradient-3)', opacity: (aiBusy || !keywords.trim()) ? 0.6 : 1 }}>
+            <Sparkles size={14} /> {aiBusy === 'generate' ? 'Generating…' : 'AI Generate'}
+          </button>
+        </div>
+      </div>
+
+      {/* ✅ Template Picker */}
+      <div className="card" style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <Eye size={15} color="var(--accent-green)" />
+          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '700' }}>Choose Layout</span>
+        </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {[['classic', { name: 'Classic', preview: '🧱', desc: 'Original HireIQ layout' }], ...Object.entries(TEMPLATES)].map(([key, t]) => (
+            <button key={key} type="button" onClick={() => { setSelectedTemplate(key); if (generated) { setHtmlPreview(''); setGenerated(false); } }}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px',
+                padding: '10px 14px', minWidth: '128px', cursor: 'pointer', textAlign: 'left',
+                background: selectedTemplate === key ? 'var(--bg-hover)' : 'var(--bg-secondary)',
+                border: selectedTemplate === key ? '2px solid var(--accent-purple)' : '1px solid var(--border)',
+                borderRadius: '10px', color: 'var(--text-primary)',
+              }}>
+              <span style={{ fontSize: '16px' }}>{t.preview} {t.premium && <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '700' }}>✨ PREMIUM</span>}</span>
+              <span style={{ fontSize: '13px', fontWeight: '700' }}>{t.name}</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.desc}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>

@@ -68,6 +68,14 @@ export const getTemplatesList = () => API.get('/api/template-editor/templates');
 export const getEditorState = (templateId) => API.get(`/api/template-editor/init/${templateId}`);
 export const saveResumeData = (data) => API.post('/api/template-editor/save', data);
 export const aiFillResume = (resumeText) => API.post('/api/template-editor/ai-fill', { resumeText });
+// ✅ AI Resume Builder — premium flows
+export const aiRedesignResume = (formData) =>
+  API.post('/api/resume-builder/ai-redesign', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+export const aiGenerateResume = (data) =>
+  API.post('/api/resume-builder/ai-generate', data); // { keywords, targetRole?, name? }
+
 // src/services/api.js
 
 // Add this to your existing exports

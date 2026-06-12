@@ -81,6 +81,69 @@ function StatusBadge({ status, screeningId, onStatusChange }) {
   );
 }
 
+// Renders structured JSON analysis (new format) with fallback to raw text (old records)
+function AnalysisPanel({ analysis }) {
+  let data = null;
+  try {
+    const parsed = JSON.parse(analysis);
+    if (parsed && typeof parsed === 'object') data = parsed;
+  } catch { /* old free-text record — fallback below */ }
+
+  const recColor = data
+    ? (data.recommendation === 'Yes' ? '#10b981' : data.recommendation === 'Conditional' ? '#f59e0b' : '#ef4444')
+    : null;
+
+  return (
+    <div style={{
+      padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px',
+      fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.7',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-purple)', fontWeight: '600', fontSize: '12px' }}>
+          <TrendingUp size={12} /> HireIQ Deep Analysis
+        </div>
+        {data && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: '700' }}>{data.matchScore}/100</span>
+            <span style={{
+              padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '700',
+              background: `${recColor}20`, color: recColor, border: `1px solid ${recColor}40`,
+            }}>
+              Interview: {data.recommendation}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {data ? (
+        <>
+          {data.strengths?.length > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#10b981', marginBottom: '4px' }}>STRENGTHS</div>
+              {data.strengths.map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: '6px' }}><span style={{ color: '#10b981' }}>✓</span><span>{s}</span></div>
+              ))}
+            </div>
+          )}
+          {data.skillGaps?.length > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#f59e0b', marginBottom: '4px' }}>SKILL GAPS</div>
+              {data.skillGaps.map((g, i) => (
+                <div key={i} style={{ display: 'flex', gap: '6px' }}><span style={{ color: '#f59e0b' }}>–</span><span>{g}</span></div>
+              ))}
+            </div>
+          )}
+          {data.reason && (
+            <div style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '12px' }}>{data.reason}</div>
+          )}
+        </>
+      ) : (
+        <div style={{ whiteSpace: 'pre-wrap' }}>{analysis}</div>
+      )}
+    </div>
+  );
+}
+
 function ScreeningCard({ result, onStatusChange, rank }) {
   const matchColor = MATCH_COLOR[result.matchLevel] || '#9ca3af';
   return (
@@ -122,17 +185,7 @@ function ScreeningCard({ result, onStatusChange, rank }) {
       <div style={{ marginBottom: result.analysis ? '12px' : 0 }}>
         <ScoreBar score={parseFloat(result.minilmScore)} />
       </div>
-      {result.analysis && (
-        <div style={{
-          padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px',
-          fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.7', whiteSpace: 'pre-wrap',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', color: 'var(--accent-purple)', fontWeight: '600', fontSize: '12px' }}>
-            <TrendingUp size={12} /> HireIQ Deep Analysis
-          </div>
-          {result.analysis}
-        </div>
-      )}
+      {result.analysis && <AnalysisPanel analysis={result.analysis} />}
       {!result.shortlisted && (
         <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '8px' }}>
           Score below 70% threshold — auto-rejected from shortlist.

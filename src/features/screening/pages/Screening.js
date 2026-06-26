@@ -6,8 +6,8 @@ import {
 import {
   getResumes, getJobs, runScreening,
   getScreeningResults, runBulkScreening, updateCandidateStatus
-} from '../services/api';
-import { useToast } from '../context/ToastContext';
+} from '../../../shared/services/api';
+import { useToast } from '../../../shared/context/ToastContext';
 
 const STATUS_OPTIONS = ['Screened', 'Interview', 'Hired', 'Rejected'];
 const STATUS_STYLES = {

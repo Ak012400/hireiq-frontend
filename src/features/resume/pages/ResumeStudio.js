@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FileEdit, MessageSquare, FileScan, Layout as LayoutIcon, Send, Upload, Download, Sparkles, Check, Bot, User } from 'lucide-react';
 import ResumeBuilder from './ResumeBuilder';
-import PdfTools from './PdfTools';
+import PdfTools from '../../pdf/pages/PdfTools';
 import TemplateStudio from '../editor/TemplateStudio';
 import { TEMPLATES } from '../templates/resumeTemplates';
 import { aiRedesignResume, coachResume, generatePdf } from '../../../shared/services/api';

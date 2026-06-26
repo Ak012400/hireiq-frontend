@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FileEdit, MessageSquare, FileScan, Layout as LayoutIcon, Send, Upload, Download, Sparkles, Check, Bot, User } from 'lucide-react';
 import ResumeBuilder from './ResumeBuilder';
 import PdfTools from './PdfTools';
-import TemplateStudio from '../SpecialEditor/TemplateStudio';
+import TemplateStudio from '../editor/TemplateStudio';
 import { TEMPLATES } from '../templates/resumeTemplates';
-import { aiRedesignResume, coachResume, generatePdf } from '../services/api';
+import { aiRedesignResume, coachResume, generatePdf } from '../../../shared/services/api';
 
 // ════════════════════════ AI COACH ROOM ════════════════════════
 // Chat with AI on the left, live resume preview on the right.

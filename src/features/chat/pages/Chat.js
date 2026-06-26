@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Zap, Trash2 } from 'lucide-react';
-import { sendMessage, clearChat, getChatSuggestions } from '../services/api';
+import { sendMessage, clearChat, getChatSuggestions } from '../../../shared/services/api';
 
 function Chat() {
   const [messages, setMessages] = useState([

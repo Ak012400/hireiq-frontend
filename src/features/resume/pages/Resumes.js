@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Plus, Trash2, User, Calendar, Search } from 'lucide-react';
-import { getResumes, createResume, deleteResume } from '../services/api';
+import { getResumes, createResume, deleteResume } from '../../../shared/services/api';
 
 function Resumes() {
   const [resumes, setResumes] = useState([]);

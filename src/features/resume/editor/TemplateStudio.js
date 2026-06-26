@@ -5,7 +5,7 @@ import {
   Code, Award, Globe, MoreHorizontal, Sparkles
 } from 'lucide-react';
 import TemplateRenderer from './TemplateRenderer';
-import { getTemplatesList, getEditorState, saveResumeData, aiFillResume, generateFieldContent, generatePdf } from '../services/api';
+import { getTemplatesList, getEditorState, saveResumeData, aiFillResume, generateFieldContent, generatePdf } from '../../../shared/services/api';
 
 // ── Default Data ──────────────────────────────────────
 const DEFAULT_DATA = {

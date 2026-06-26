@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Plus, Trash2, Calendar, Search, Sparkles } from 'lucide-react';
-import { getJobs, createJob, deleteJob, generateFieldContent } from '../services/api';
+import { getJobs, createJob, deleteJob, generateFieldContent } from '../../../shared/services/api';
 
 function Jobs() {
   const [jobs, setJobs] = useState([]);

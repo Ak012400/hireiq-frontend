@@ -3,8 +3,8 @@ import {
   Mic, MicOff, Play, Square, RotateCcw,
   Zap, Award, ChevronRight, GraduationCap, Clock
 } from 'lucide-react';
-import API from '../services/api';
-import { useToast } from '../context/ToastContext';
+import API from '../../../shared/services/api';
+import { useToast } from '../../../shared/context/ToastContext';
 
 const STAGES = { setup: 'setup', active: 'active', finished: 'finished' };
 

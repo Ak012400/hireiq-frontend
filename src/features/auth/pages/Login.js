@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../services/api';
+import { login } from '../../../shared/services/api';
 import { Zap, Mail, Lock, ArrowRight } from 'lucide-react';
 
 function Login() {

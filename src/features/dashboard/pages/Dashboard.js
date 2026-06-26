@@ -6,7 +6,7 @@ import {
   Clock, ChevronRight, Video, BarChart2, GraduationCap,
   BookOpen, Star, Target, Award, FileScan
 } from 'lucide-react';
-import { getResumes, getJobs, getScreeningResults } from '../services/api';
+import { getResumes, getJobs, getScreeningResults } from '../../../shared/services/api';
 
 const STATUS_COLORS = {
   Screened: '#06b6d4', Interview: '#f59e0b', Hired: '#10b981', Rejected: '#ef4444',

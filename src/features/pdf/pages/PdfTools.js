@@ -4,7 +4,7 @@ import {
   CheckCircle, XCircle, Eye, Sparkles, Send,
   Link, User, Download, X, MessageSquare, Image
 } from 'lucide-react';
-import { getJobs, screenPdfResume, reviewPdfResume, generateFieldContent,generatePdf} from '../services/api';
+import { getJobs, screenPdfResume, reviewPdfResume, generateFieldContent,generatePdf} from '../../../shared/services/api';
 
 // ── Review Card Component ─────────────────────────────────────────────────
 function ReviewCard({ result, jdUsed }) {

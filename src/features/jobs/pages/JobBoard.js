@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Search, Calendar, ArrowRight, CheckCircle, Clock } from 'lucide-react';
-import { getJobs } from '../services/api';
-import { useToast } from '../context/ToastContext';
-import API from '../services/api';
+import { getJobs } from '../../../shared/services/api';
+import { useToast } from '../../../shared/context/ToastContext';
+import API from '../../../shared/services/api';
 
 function JobBoard() {
   const toast = useToast();

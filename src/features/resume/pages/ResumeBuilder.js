@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FileEdit, Zap, Download, Eye, Briefcase, Code, GraduationCap, FolderOpen, Phone, Plus, Trash2, Sparkles, Award, Upload, Wand2 } from 'lucide-react';
-import { generatePdf, getCustomFields, createCustomField, deleteCustomField, generateFieldContent, aiRedesignResume, aiGenerateResume } from '../services/api';
+import { generatePdf, getCustomFields, createCustomField, deleteCustomField, generateFieldContent, aiRedesignResume, aiGenerateResume } from '../../../shared/services/api';
 import { TEMPLATES } from '../templates/resumeTemplates';
 function ResumeBuilder() {
   const user = JSON.parse(localStorage.getItem('hireiq_user') || '{}');

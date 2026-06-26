@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart2, TrendingUp, Users, CheckCircle, XCircle, Target } from 'lucide-react';
-import { getJobs, getScreeningResults, getResumes } from '../services/api';
+import { getJobs, getScreeningResults, getResumes } from '../../../shared/services/api';
 
 function MiniBar({ label, value, max, color }) {
   const pct = max > 0 ? (value / max) * 100 : 0;

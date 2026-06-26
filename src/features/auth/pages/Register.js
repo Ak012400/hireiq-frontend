@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { register } from '../services/api';
+import { register } from '../../../shared/services/api';
 import { Zap, User, Mail, Lock, ArrowRight, Briefcase, GraduationCap, Check } from 'lucide-react';
 
 function Register() {

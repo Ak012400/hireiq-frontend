@@ -1,15 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { aiInterviewApi } from '../api/aiInterviewApi';
+import ConsentGate from '../../candidatePortal/components/ConsentGate';
 
-// AI Interview Room — candidate-facing.
+// Wrap the actual room in a consent gate — GDPR / India IT Act requirement.
+export default function AiInterviewRoomWithConsent() {
+  const { journeyId } = useParams();
+  return (
+    <ConsentGate kind="AiInterviewRecording" relatedEntityId={journeyId}>
+      <AiInterviewRoomInner />
+    </ConsentGate>
+  );
+}
+
+// AI Interview Room — candidate-facing (rendered after consent).
 // 1. Starts session on mount
 // 2. Pulls next question from /next-question
 // 3. Captures webcam + sends frame every 5s for visual agent
-// 4. Captures answer via SpeechRecognition (browser STT — replace with Whisper for prod)
+// 4. Captures answer via SpeechRecognition (browser STT — Whisper available server-side for prod audio uploads)
 // 5. Submits answer → orchestrator queues deep analysis in background
 // 6. On End → /end returns final scores
-export default function AiInterviewRoom() {
+function AiInterviewRoomInner() {
   const { roomId, journeyId } = useParams();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);

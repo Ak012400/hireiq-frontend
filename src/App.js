@@ -20,6 +20,10 @@ import Chat from './features/chat/pages/Chat';
 import InterviewRooms from './features/interview/pages/InterviewRooms';
 import MockInterview from './features/interview/pages/MockInterview';
 import PdfTools from './features/pdf/pages/PdfTools';
+import JobPostings from './features/jobPostings/pages/JobPostings';
+import NewJobPosting from './features/jobPostings/pages/NewJobPosting';
+import CandidatePipeline from './features/pipeline/pages/CandidatePipeline';
+import AiInterviewRoom from './features/aiInterview/pages/AiInterviewRoom';
 
 // Shared
 import Layout from './shared/layouts/Layout';
@@ -63,6 +67,12 @@ function App() {
               <Route path="template-studio" element={<TemplateStudio />} />
               <Route path="resume-studio" element={<ResumeStudio />} />
               <Route path="chat" element={<Chat />} />
+
+              {/* Phase-2 hiring automation */}
+              <Route path="job-postings" element={<HirerOnly><JobPostings /></HirerOnly>} />
+              <Route path="job-postings/new" element={<HirerOnly><NewJobPosting /></HirerOnly>} />
+              <Route path="pipeline/:jobId" element={<HirerOnly><CandidatePipeline /></HirerOnly>} />
+              <Route path="ai-interview/:roomId/:journeyId" element={<AiInterviewRoom />} />
 
               {/* Candidate routes */}
               <Route path="job-board" element={<CandidateOnly><JobBoard /></CandidateOnly>} />

@@ -24,6 +24,11 @@ import JobPostings from './features/jobPostings/pages/JobPostings';
 import NewJobPosting from './features/jobPostings/pages/NewJobPosting';
 import CandidatePipeline from './features/pipeline/pages/CandidatePipeline';
 import AiInterviewRoom from './features/aiInterview/pages/AiInterviewRoom';
+import PublicJobBoard from './features/candidatePortal/pages/PublicJobBoard';
+import ApplyForm from './features/candidatePortal/pages/ApplyForm';
+import MyApplications from './features/candidatePortal/pages/MyApplications';
+import HirerDashboard from './features/hirer/pages/HirerDashboard';
+import InterviewReport from './features/hirer/pages/InterviewReport';
 
 // Shared
 import Layout from './shared/layouts/Layout';
@@ -52,6 +57,10 @@ function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public no-auth routes — candidate job browsing */}
+            <Route path="/browse" element={<PublicJobBoard />} />
+            <Route path="/jobs/:jobId/apply" element={<ApplyForm />} />
+
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
@@ -68,10 +77,15 @@ function App() {
               <Route path="resume-studio" element={<ResumeStudio />} />
               <Route path="chat" element={<Chat />} />
 
-              {/* Phase-2 hiring automation */}
+              {/* Phase-2 hiring automation — hirer */}
+              <Route path="hirer" element={<HirerOnly><HirerDashboard /></HirerOnly>} />
               <Route path="job-postings" element={<HirerOnly><JobPostings /></HirerOnly>} />
               <Route path="job-postings/new" element={<HirerOnly><NewJobPosting /></HirerOnly>} />
               <Route path="pipeline/:jobId" element={<HirerOnly><CandidatePipeline /></HirerOnly>} />
+              <Route path="interview-report/:sessionId" element={<HirerOnly><InterviewReport /></HirerOnly>} />
+
+              {/* Candidate-side */}
+              <Route path="my-applications" element={<MyApplications />} />
               <Route path="ai-interview/:roomId/:journeyId" element={<AiInterviewRoom />} />
 
               {/* Candidate routes */}

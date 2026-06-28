@@ -25,6 +25,7 @@ import NewJobPosting from './features/jobPostings/pages/NewJobPosting';
 import CandidatePipeline from './features/pipeline/pages/CandidatePipeline';
 import AiInterviewRoom from './features/aiInterview/pages/AiInterviewRoom';
 import PublicJobBoard from './features/candidatePortal/pages/PublicJobBoard';
+import PublicJobDetail from './features/candidatePortal/pages/PublicJobDetail';
 import ApplyForm from './features/candidatePortal/pages/ApplyForm';
 import MyApplications from './features/candidatePortal/pages/MyApplications';
 import HirerDashboard from './features/hirer/pages/HirerDashboard';
@@ -59,6 +60,7 @@ function App() {
           <Routes>
             {/* Public no-auth routes — candidate job browsing */}
             <Route path="/browse" element={<PublicJobBoard />} />
+            <Route path="/browse/:id" element={<PublicJobDetail />} />
             <Route path="/jobs/:jobId/apply" element={<ApplyForm />} />
 
             <Route path="/login" element={<Login />} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { aiInterviewApi } from '../api/aiInterviewApi';
+import { aiInterviewApi, mediaApi } from '../api/aiInterviewApi';
 import ConsentGate from '../../candidatePortal/components/ConsentGate';
 
 // Wrap the actual room in a consent gate — GDPR / India IT Act requirement.
@@ -25,6 +25,8 @@ function AiInterviewRoomInner() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const recognitionRef = useRef(null);
+  const liveKitRoomRef = useRef(null);
+  const localStreamRef = useRef(null);
 
   const [sessionId, setSessionId] = useState(null);
   const [question, setQuestion] = useState(null);
@@ -32,16 +34,51 @@ function AiInterviewRoomInner() {
   const [answer, setAnswer] = useState('');
   const [recording, setRecording] = useState(false);
   const [finalScore, setFinalScore] = useState(null);
+  const [livekitStatus, setLiveKitStatus] = useState('not-connected');  // not-connected | connecting | connected | disabled
 
-  // ── Init session + webcam ──
+  // ── Init session + webcam (+ optional LiveKit) ──
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       const { data } = await aiInterviewApi.start(roomId, journeyId);
+      if (cancelled) return;
       setSessionId(data.sessionId);
+
+      // 1) Always grab local stream first — backend visual + audio capture rely on it
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+      localStreamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
+
+      // 2) Optionally try to upgrade to a LiveKit room (proper WebRTC + server-side recording).
+      //    Backend returns { token: null } if LiveKit not configured — falls back gracefully.
+      try {
+        setLiveKitStatus('connecting');
+        const { data: tok } = await mediaApi.liveKitToken(roomId, `candidate-${journeyId}`);
+        if (!tok.token || !tok.url) {
+          setLiveKitStatus('disabled');
+        } else {
+          const { Room, RoomEvent } = await import('livekit-client');
+          const room = new Room({ adaptiveStream: true, dynacast: true });
+          room.on(RoomEvent.Disconnected, () => setLiveKitStatus('not-connected'));
+          await room.connect(tok.url, tok.token);
+          // Publish local camera + mic into the LiveKit room (server-side recording / multi-party)
+          await room.localParticipant.enableCameraAndMicrophone();
+          liveKitRoomRef.current = room;
+          setLiveKitStatus('connected');
+        }
+      } catch (e) {
+        console.warn('LiveKit unavailable, continuing with local stream only:', e);
+        setLiveKitStatus('disabled');
+      }
+
       await fetchNextQuestion(data.sessionId);
     })();
+    return () => {
+      cancelled = true;
+      try { liveKitRoomRef.current?.disconnect(); } catch {}
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
+    };
   }, [roomId, journeyId]);
 
   // ── Frame capture every 5s for Visual agent ──
@@ -66,33 +103,63 @@ function AiInterviewRoomInner() {
     setAnswer('');
   };
 
-  // ── Browser SpeechRecognition for transcript (MVP). Prod: stream audio → Whisper ──
-  const startRecording = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert('Speech recognition not supported. Type your answer instead.'); return; }
-    const r = new SR();
-    r.continuous = true;
-    r.interimResults = true;
-    r.lang = 'en-IN';
-    r.onresult = (e) => {
-      const text = Array.from(e.results).map(x => x[0].transcript).join(' ');
-      setAnswer(text);
-    };
-    r.onend = () => setRecording(false);
-    recognitionRef.current = r;
-    r.start();
-    setRecording(true);
+  // ── MediaRecorder-based recording: captures audio Blob → uploaded to backend → Whisper transcribes ──
+  // recognitionRef is now a MediaRecorder; we keep the name for minimal-diff.
+  const mediaChunksRef = useRef([]);
+  const recordStartRef = useRef(0);
+
+  const startRecording = async () => {
+    try {
+      const stream = videoRef.current?.srcObject;
+      if (!stream) { alert('Camera/mic not ready'); return; }
+      const audioStream = new MediaStream(stream.getAudioTracks());
+      const mr = new MediaRecorder(audioStream, { mimeType: 'audio/webm' });
+      mediaChunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) mediaChunksRef.current.push(e.data); };
+      mr.start();
+      recognitionRef.current = mr;
+      recordStartRef.current = Date.now();
+      setRecording(true);
+    } catch (e) {
+      alert('Failed to start recording: ' + e.message);
+    }
   };
 
-  const stopRecording = async () => {
-    recognitionRef.current?.stop();
-    setRecording(false);
-  };
+  const stopRecording = () => new Promise((resolve) => {
+    const mr = recognitionRef.current;
+    if (!mr) return resolve(null);
+    mr.onstop = () => {
+      const blob = new Blob(mediaChunksRef.current, { type: 'audio/webm' });
+      setRecording(false);
+      resolve(blob);
+    };
+    mr.stop();
+  });
 
   const submitAnswer = async () => {
-    if (!question || !answer.trim()) return;
-    const start = Date.now() - 30000;
-    await aiInterviewApi.submitAnswer(sessionId, question.questionId, answer, start, Date.now());
+    if (!question) return;
+    const startMs = recordStartRef.current || (Date.now() - 30000);
+    const endMs = Date.now();
+
+    // If recording is active, stop + upload audio to Whisper; transcript persisted server-side.
+    if (recording) {
+      const blob = await stopRecording();
+      if (blob && blob.size > 0) {
+        try {
+          const { data } = await mediaApi.transcribeChunk(sessionId, question.questionId, startMs, endMs, blob);
+          setAnswer(data.text || answer);
+          setHistory([...history, { q: question.questionText, a: data.text || answer }]);
+          await fetchNextQuestion(sessionId);
+          return;
+        } catch (e) {
+          // Fall through to typed-answer submission
+        }
+      }
+    }
+
+    // Typed answer fallback
+    if (!answer.trim()) return;
+    await aiInterviewApi.submitAnswer(sessionId, question.questionId, answer, startMs, endMs);
     setHistory([...history, { q: question.questionText, a: answer }]);
     await fetchNextQuestion(sessionId);
   };
@@ -118,6 +185,17 @@ function AiInterviewRoomInner() {
       <div>
         <video ref={videoRef} autoPlay muted className="w-full bg-black rounded" />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
+        <div className="mt-2 text-xs flex items-center gap-2">
+          <span className={`inline-block w-2 h-2 rounded-full ${
+            livekitStatus === 'connected' ? 'bg-green-500' :
+            livekitStatus === 'connecting' ? 'bg-amber-500 animate-pulse' :
+            livekitStatus === 'disabled' ? 'bg-gray-400' : 'bg-red-500'
+          }`} />
+          LiveKit: {livekitStatus}
+          {livekitStatus === 'disabled' && (
+            <span className="text-gray-400">(local recording only — set LiveKit env vars to enable)</span>
+          )}
+        </div>
       </div>
       <div className="flex flex-col">
         <div className="bg-indigo-50 border-l-4 border-indigo-600 p-4 mb-3">

@@ -4,24 +4,27 @@ import {
   LayoutDashboard, FileText, Briefcase, Search,
   MessageSquare, FileEdit, LogOut, Menu, X, Zap,
   Video, BarChart2,
-  GraduationCap, BookOpen, Bell
+  GraduationCap, BookOpen, Bell,
+  Building2, ListTodo, Send, ClipboardList
 } from 'lucide-react';
 
 const HIRER_NAV = [
-  { path: '/',                 icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/hirer',            icon: LayoutDashboard, label: 'Recruiter Hub',   badge: 'NEW' },
+  { path: '/job-postings',     icon: Building2,       label: 'Job Postings',    badge: 'NEW' },
   { path: '/resumes',          icon: FileText,        label: 'Resumes' },
-  { path: '/jobs',             icon: Briefcase,       label: 'Jobs' },
+  { path: '/jobs',             icon: Briefcase,       label: 'Jobs (legacy)' },
   { path: '/screening',        icon: Search,          label: 'Screening' },
-  { path: '/interview-rooms',  icon: Video,           label: 'Interview Rooms', badge: 'NEW' },
+  { path: '/interview-rooms',  icon: Video,           label: 'Interview Rooms' },
   { path: '/analytics',        icon: BarChart2,       label: 'Analytics' },
   { path: '/chat',             icon: MessageSquare,   label: 'AI Chat' },
-  { path: '/resume-studio',    icon: FileEdit,        label: 'Resume Studio', badge: 'NEW' }, // ✅ Builder + Coach + Enhancer + Templates — one hub
+  { path: '/resume-studio',    icon: FileEdit,        label: 'Resume Studio' },
 ];
 
 const CANDIDATE_NAV = [
   { path: '/',                 icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/resume-studio',    icon: FileEdit,        label: 'Resume Studio', badge: 'NEW' }, // ✅ one hub
-  { path: '/job-board',        icon: BookOpen,        label: 'Job Board' },
+  { path: '/browse',           icon: BookOpen,        label: 'Browse Jobs',     badge: 'NEW' },
+  { path: '/my-applications',  icon: ClipboardList,   label: 'My Applications', badge: 'NEW' },
+  { path: '/resume-studio',    icon: FileEdit,        label: 'Resume Studio' },
   { path: '/mock-interview',   icon: GraduationCap,   label: 'Mock Interview' },
   { path: '/chat',             icon: MessageSquare,   label: 'AI Chat' },
 ];

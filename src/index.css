@@ -74,6 +74,10 @@ h1, h2, h3, h4 {
   text-decoration: none !important;
 }
 .btn-primary > * { color: white !important; }
+
+/* Spinner used in AI loading buttons */
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(124,58,237,0.4);

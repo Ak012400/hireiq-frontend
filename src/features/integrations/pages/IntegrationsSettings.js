@@ -39,16 +39,35 @@ const BOARD_META = {
 };
 
 export default function IntegrationsSettings() {
-  const [boards, setBoards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Always render these 4 cards even if backend is offline / not yet deployed.
+  // Backend status (configured, OAuth done, etc.) is merged in via fetch.
+  const DEFAULT_BOARDS = ['Indeed', 'LinkedIn', 'Naukri', 'Glassdoor'].map(board => ({
+    board, enabled: false, configured: false, hasOAuth: false,
+    supportsPush: board === 'Indeed',
+    requiresPartnership: board !== 'Indeed',
+    lastUpdated: null,
+  }));
+
+  const [boards, setBoards] = useState(DEFAULT_BOARDS);
+  const [loading, setLoading] = useState(false);
   const [drafts, setDrafts] = useState({});      // unsaved key edits per board
+  const [apiError, setApiError] = useState(null);
 
   const refresh = async () => {
-    setLoading(true);
-    try { const { data } = await integrationsApi.list(); setBoards(data); }
-    finally { setLoading(false); }
+    setLoading(true); setApiError(null);
+    try {
+      const { data } = await integrationsApi.list();
+      // Merge backend status into defaults so UI always shows 4 cards
+      const byBoard = Object.fromEntries((data || []).map(b => [b.board, b]));
+      setBoards(DEFAULT_BOARDS.map(d => ({ ...d, ...(byBoard[d.board] || {}) })));
+    } catch (e) {
+      setApiError(e?.response?.status === 404
+        ? 'Backend hasn\'t been deployed with the integrations API yet — UI works in demo mode for now.'
+        : e?.response?.data?.error || e?.message || 'Could not load integrations');
+      // Keep defaults so the user sees the cards
+    } finally { setLoading(false); }
   };
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
   const updateDraft = (board, k, v) =>
     setDrafts(d => ({ ...d, [board]: { ...(d[board] || {}), [k]: v } }));
@@ -71,8 +90,6 @@ export default function IntegrationsSettings() {
     else alert(data.error || 'LinkedIn ClientId not configured');
   };
 
-  if (loading) return <div style={{ padding: 40, color: colors.textMuted }}>Loading…</div>;
-
   return (
     <div>
       <div style={pageHeader}>
@@ -81,6 +98,18 @@ export default function IntegrationsSettings() {
           <p style={subtitle}>Connect each job board where you want HireIQ to publish your jobs</p>
         </div>
       </div>
+
+      {apiError && (
+        <div style={{
+          display: 'flex', gap: 8, padding: 12, borderRadius: 8, marginBottom: 16,
+          background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)',
+          color: '#fcd34d', fontSize: 13,
+        }}>
+          <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div>{apiError}</div>
+        </div>
+      )}
+      {loading && <div style={{ padding: 12, color: colors.textMuted, fontSize: 13 }}>Refreshing status…</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16 }}>
         {boards.filter(b => b.board !== 'Custom').map(b => {

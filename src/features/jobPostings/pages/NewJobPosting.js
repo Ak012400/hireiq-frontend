@@ -4,6 +4,16 @@ import { Briefcase, AlertCircle } from 'lucide-react';
 import { jobPostingsApi } from '../api/jobPostingsApi';
 import { card, input, label, h1, subtitle, colors } from '../../../shared/styles/darkTheme';
 
+// ⚠ Defined OUTSIDE the component on purpose.
+// Defining a component inside the parent re-creates it on every render →
+// React unmounts/remounts the input each keystroke → focus loss.
+const Field = ({ lbl, children }) => (
+  <div>
+    <label style={label}>{lbl}</label>
+    {children}
+  </div>
+);
+
 // Dark-theme structured job-posting form (LinkedIn/Indeed compatible field set).
 export default function NewJobPosting() {
   const nav = useNavigate();
@@ -42,13 +52,6 @@ export default function NewJobPosting() {
       setSaving(false);
     }
   };
-
-  const Field = ({ lbl, children }) => (
-    <div>
-      <label style={label}>{lbl}</label>
-      {children}
-    </div>
-  );
 
   return (
     <div style={{ maxWidth: 880, margin: '0 auto' }}>

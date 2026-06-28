@@ -5,7 +5,7 @@ import {
   MessageSquare, FileEdit, LogOut, Menu, X, Zap,
   Video, BarChart2,
   GraduationCap, BookOpen, Bell,
-  Building2, ListTodo, Send, ClipboardList
+  Building2, ListTodo, Send, ClipboardList, Plug
 } from 'lucide-react';
 
 const HIRER_NAV = [
@@ -18,6 +18,7 @@ const HIRER_NAV = [
   { path: '/analytics',        icon: BarChart2,       label: 'Analytics' },
   { path: '/chat',             icon: MessageSquare,   label: 'AI Chat' },
   { path: '/resume-studio',    icon: FileEdit,        label: 'Resume Studio' },
+  { path: '/integrations',     icon: Plug,            label: 'Integrations',    badge: 'NEW' },
 ];
 
 const CANDIDATE_NAV = [

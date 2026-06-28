@@ -30,6 +30,7 @@ import ApplyForm from './features/candidatePortal/pages/ApplyForm';
 import MyApplications from './features/candidatePortal/pages/MyApplications';
 import HirerDashboard from './features/hirer/pages/HirerDashboard';
 import InterviewReport from './features/hirer/pages/InterviewReport';
+import IntegrationsSettings from './features/integrations/pages/IntegrationsSettings';
 
 // Shared
 import Layout from './shared/layouts/Layout';
@@ -85,6 +86,7 @@ function App() {
               <Route path="job-postings/new" element={<HirerOnly><NewJobPosting /></HirerOnly>} />
               <Route path="pipeline/:jobId" element={<HirerOnly><CandidatePipeline /></HirerOnly>} />
               <Route path="interview-report/:sessionId" element={<HirerOnly><InterviewReport /></HirerOnly>} />
+              <Route path="integrations" element={<HirerOnly><IntegrationsSettings /></HirerOnly>} />
 
               {/* Candidate-side */}
               <Route path="my-applications" element={<MyApplications />} />
